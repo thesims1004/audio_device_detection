@@ -19,7 +19,7 @@ class AudioDeviceManager(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var broadcastReceiver: AudioDeviceBroadcastReceiver? = null
 
-    // [NEW] API 23 이상에서 기기 목록 가져오기 (권장)
+    // API 23 이상에서 기기 목록 가져오기 (권장)
     fun getConnectedDevices(): List<Map<String, Any?>> {
         val deviceList = mutableListOf<Map<String, Any?>>()
 
@@ -80,9 +80,10 @@ class AudioDeviceManager(
             }
 
             val intentFilter = IntentFilter().apply {
+                // Bluetooth
                 addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
                 addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
-                // [NEW] 유선 헤드셋 액션 추가
+                // Wired Headset
                 addAction(AudioManager.ACTION_HEADSET_PLUG)
             }
             context.registerReceiver(broadcastReceiver, intentFilter)

@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io'; // Platform.isAndroid 확인을 위해 추가
+import 'dart:io'; // Added to check Platform.isAndroid
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// 개발 중인 플러그인의 메인 파일과 모델을 import 합니다.
+// Import the main file and models from the plugin we are developing.
 import 'package:audio_device_detection/audio_device_detection.dart';
 
 void main() {
@@ -34,59 +34,64 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // 기기 목록을 저장하고 UI를 업데이트하기 위한 상태 변수
+  // State variables to store the device list and update the UI.
   List<AudioDevice> _connectedDevices = [];
   bool _isLoading = false;
-  String _permissionStatus = '권한 상태를 확인하세요.';
+  String _permissionStatus = 'Please check the permission status.';
 
-  // 이벤트 스트림 구독을 관리하기 위한 변수
+  // Variable to manage the event stream subscription.
   StreamSubscription<AudioDevice>? _deviceStateSubscription;
 
-  // [핵심] Future Queue를 위한 변수
-  // 초기값은 완료된 Future로 설정하여 바로 시작할 수 있게 합니다.
+  // [Key] Variable for the Future Queue.
+  // Initialized with a completed Future to allow immediate execution.
   Future<void> _fetchQueue = Future.value();
 
   @override
   void initState() {
     super.initState();
-    // 앱 시작 시 현재 권한 상태를 확인합니다.
+    // Check the current permission status when the app starts.
     _checkInitialPermission();
   }
 
   @override
   void dispose() {
-    // 위젯이 제거될 때 스트림 구독을 반드시 취소하여 메모리 누수를 방지합니다.
+    // It's crucial to cancel the stream subscription when the widget is disposed to prevent memory leaks.
     _deviceStateSubscription?.cancel();
     super.dispose();
   }
 
-  /// 앱 시작 시 현재 권한 상태를 확인하고, 권한이 있다면 바로 기기 목록을 가져옵니다.
+  /// Checks the current permission status at app startup and loads the device list if permission is granted.
   Future<void> _checkInitialPermission() async {
     if (Platform.isAndroid) {
       final status = await Permission.bluetoothConnect.status;
       if (status.isGranted) {
         setState(() {
-          _permissionStatus = '블루투스 권한이 허용되었습니다.';
+          _permissionStatus = 'Bluetooth permission has been granted.';
         });
-        // 권한이 이미 있다면 기기 목록 로드 및 이벤트 리스너 등록
+        // If permission is already granted, load the device list and register the event listener.
         _initializePlugin();
       } else {
         setState(() {
-          _permissionStatus = '블루투스 권한을 요청해야 합니다.';
+          _permissionStatus = 'Bluetooth permission needs to be requested.';
         });
       }
     } else {
-      // iOS는 별도의 권한 요청이 필요 없으므로 바로 초기화 진행
+      // iOS does not require a separate permission request, so proceed with initialization.
+      setState(() {
+        _permissionStatus = 'Ready to detect devices on iOS.';
+      });
       _initializePlugin();
     }
   }
 
-  /// 블루투스 연결 권한을 요청하는 함수
+  /// A function to request Bluetooth connection permission.
   Future<void> _requestBluetoothPermission() async {
     if (!Platform.isAndroid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('iOS에서는 별도의 권한 요청이 필요하지 않습니다.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No separate permission request is needed on iOS.')),
+        );
+      }
       _initializePlugin();
       return;
     }
@@ -95,64 +100,64 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (status.isGranted) {
       setState(() {
-        _permissionStatus = '블루투스 권한이 허용되었습니다.';
+        _permissionStatus = 'Bluetooth permission has been granted.';
       });
-      // 권한 획득 성공 시, 기기 목록 로드 및 이벤트 리스너 등록
+      // On successful permission grant, load the device list and register the event listener.
       _initializePlugin();
     } else if (status.isDenied) {
       setState(() {
-        _permissionStatus = '권한이 거부되었습니다. 기능 사용이 제한됩니다.';
+        _permissionStatus = 'Permission denied. Feature usage is limited.';
       });
     } else if (status.isPermanentlyDenied) {
       setState(() {
-        _permissionStatus = '권한이 영구적으로 거부되었습니다. 앱 설정에서 직접 허용해야 합니다.';
+        _permissionStatus = 'Permission permanently denied. You must grant it from the app settings.';
       });
-      // 설정 화면으로 이동할 수 있는 옵션을 제공
+      // Provide an option to navigate to the app settings.
       openAppSettings();
     }
   }
 
-  /// 플러그인 기능(기기 목록, 이벤트 수신)을 초기화하는 함수
+  /// Initializes the plugin's features (device list, event stream).
   void _initializePlugin() {
-    // 이미 구독 중이라면 중복 실행 방지
+    // Prevent duplicate subscriptions.
     if (_deviceStateSubscription != null) return;
 
-    // 1. 현재 연결된 기기 목록 가져오기, 큐에 넣어서 실행
+    // 1. Fetch the initial list of connected devices by scheduling it in the queue.
     _scheduleFetchDevices();
 
-    // 2. 기기 연결/해제 이벤트 스트림 구독
+    // 2. Subscribe to the device connection/disconnection event stream.
     _deviceStateSubscription = AudioDeviceDetection.instance.onDeviceStateChanged.listen(
           (AudioDevice device) {
-        // 이벤트 발생 시 스낵바 표시
+        // Show a SnackBar when an event occurs.
         final message = device.isConnected
-            ? '${device.name}이(가) 연결되었습니다. (${device.protocol.name})'
-            : '${device.name}의 연결이 끊어졌습니다.';
+            ? '${device.name} has been connected. (${device.protocol.name})'
+            : '${device.name} has been disconnected.';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
 
-        // 기기 목록을 다시 로드하여 UI 갱신, 큐에 작업 추가
+        // Schedule a device list refresh to update the UI.
         _scheduleFetchDevices();
       },
       onError: (error) {
-        print('이벤트 스트림 에러: $error');
+        print('Event stream error: $error');
       },
     );
   }
 
-  /// Future Queue 구현
-  /// 이전 작업이 무엇이든, 그 작업이 끝난(whenComplete) 뒤에
-  /// _fetchConnectedDevices를 실행하도록 체이닝합니다.
+  /// Future Queue Implementation.
+  /// Chains the _fetchConnectedDevices call to run after the previous task is complete.
   void _scheduleFetchDevices() {
-    // 큐(체인)에 새로운 작업을 연결하고, _fetchQueue 포인터를 갱신합니다.
+    // Chains a new task to the queue and updates the _fetchQueue pointer.
     _fetchQueue = _fetchQueue.whenComplete(() async {
-
-      // OS가 장치 목록을 갱신할 시간을 벌어줍니다.
-      // 블루투스 프로필 연결에는 시간이 걸리므로 500ms 정도면 충분히 안전합니다.
+      // Give the OS some time to update the device list.
+      // A delay of 500ms is generally safe for Bluetooth profile connections to settle.
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
@@ -161,24 +166,29 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  /// 현재 연결된 기기 목록을 가져와 상태를 업데이트하는 함수
+  /// Fetches the list of connected devices and updates the state.
   Future<void> _fetchConnectedDevices() async {
     print('_fetchConnectedDevices called');
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
     try {
       final devices = await AudioDeviceDetection.instance.getConnectedDevices();
-      print('_fetchConnectedDevices : ${devices.length}');
-      setState(() {
-        _connectedDevices = devices;
-      });
+      print('_fetchConnectedDevices found: ${devices.length}');
+      if (mounted) {
+        setState(() {
+          _connectedDevices = devices;
+        });
+      }
     } catch (e) {
-      print('기기 목록을 가져오는 데 실패했습니다: $e');
+      print('Failed to get device list: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -194,14 +204,14 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 권한 요청 버튼
+            // Permission request button
             ElevatedButton.icon(
               icon: const Icon(Icons.bluetooth_searching),
-              label: const Text('블루투스 권한 요청 및 초기화'),
+              label: const Text('Request Permission & Initialize'),
               onPressed: _requestBluetoothPermission,
             ),
             const SizedBox(height: 16),
-            // 현재 권한 상태 표시
+            // Display current permission status
             Text(
               _permissionStatus,
               style: Theme.of(context).textTheme.bodySmall,
@@ -212,16 +222,16 @@ class _MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
-                '현재 연결된 오디오 기기',
+                'Currently Connected Audio Devices',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            // 기기 목록을 표시하는 리스트뷰
+            // ListView to display the device list
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _connectedDevices.isEmpty
-                  ? const Center(child: Text('연결된 기기가 없습니다.'))
+                  ? const Center(child: Text('No connected devices found.'))
                   : RefreshIndicator(
                 onRefresh: _fetchConnectedDevices,
                 child: ListView.builder(
@@ -233,7 +243,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         leading: const Icon(Icons.headset, color: Colors.blue),
                         title: Text(device.name),
                         subtitle: Text(
-                          '프로토콜: ${device.protocol.name} / 주소: ${device.address ?? 'N/A'}',
+                          'Protocol: ${device.protocol.name.toUpperCase()} / ID: ${device.address ?? 'N/A'}',
                         ),
                       ),
                     );

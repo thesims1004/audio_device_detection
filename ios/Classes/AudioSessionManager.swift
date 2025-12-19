@@ -24,7 +24,7 @@ class AudioSessionManager {
             devices.append(AudioPortMapper.fromAVAudioSessionPort(port, isConnected: true))
         }
 
-        // 2. [수정] 현재 활성화되진 않았지만 연결되어 있는 입력 장치들 (블루투스 + 유선) 확인
+        // 2. 현재 활성화되진 않았지만 연결되어 있는 입력 장치들 (블루투스 + 유선) 확인
         // iOS는 '출력 전용' 기기의 전체 목록을 조회하는 API가 제한적이라,
         // 보통 입력(마이크) 기능이 있는 기기들을 통해 연결 여부를 파악합니다.
         let connectedInputs = availableInputs.filter { input in
@@ -42,7 +42,7 @@ class AudioSessionManager {
             }
         }
 
-        // 3. [옵션] 내장 스피커/수화기가 목록에 없다면 강제로 추가 (항상 존재하므로)
+        // 3. 내장 스피커/수화기가 목록에 없다면 강제로 추가 (항상 존재하므로)
         // iOS 정책상 이어폰을 꽂으면 스피커가 리스트에서 사라질 수도 있지만,
         // 물리적으로는 존재하므로 목록에 표시하고 싶다면 아래 로직 추가 가능
         /*
@@ -110,7 +110,7 @@ class AudioSessionManager {
                 onDeviceStateChanged(oldDeviceMap)
             }
 
-            // 2. [추가] 자동으로 전환된 기기(예: 스피커) 정보 전송
+            // 2. 자동으로 전환된 기기(예: 스피커) 정보 전송
             // 유선/블루투스 해제 후 스피커로 돌아왔음을 알리기 위함
             if let fallbackDevice = currentDevice {
                 let fallbackMap = AudioPortMapper.fromAVAudioSessionPort(fallbackDevice, isConnected: true)
@@ -119,7 +119,7 @@ class AudioSessionManager {
             }
 
         case .categoryChange:
-            // [추가] 카테고리 변경(예: 음악 -> 통화) 시에도 출력 기기가 바뀔 수 있음 (스피커 -> 수화기)
+            // 카테고리 변경(예: 음악 -> 통화) 시에도 출력 기기가 바뀔 수 있음 (스피커 -> 수화기)
             if let newDevice = currentDevice, newDevice.uid != lastConnectedDevice?.uid {
                 let deviceMap = AudioPortMapper.fromAVAudioSessionPort(newDevice, isConnected: true)
                 onDeviceStateChanged(deviceMap)
