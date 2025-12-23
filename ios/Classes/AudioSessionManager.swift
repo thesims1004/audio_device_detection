@@ -32,7 +32,7 @@ class AudioSessionManager {
             return input.portType.isBluetooth ||
                    input.portType == .headphones ||
                    input.portType == .headsetMic ||
-                   input.portType == .usbaudio
+                   input.portType == .usbAudio
         }
 
         for port in connectedInputs {

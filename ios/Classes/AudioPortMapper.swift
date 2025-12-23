@@ -30,7 +30,7 @@ struct AudioPortMapper {
         case .builtInReceiver:
             return "earpiece"
 
-        case .headphones, .headsetMic, .usbaudio:
+        case .headphones, .headsetMic, .usbAudio:
             return "wired" // 유선은 통합 유지
 
         case .carAudio:
