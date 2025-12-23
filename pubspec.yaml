@@ -1,6 +1,6 @@
 name: audio_device_detection
 description: "A Flutter plugin to detect changes in audio output devices like Bluetooth, wired headsets, and built-in speakers, and to get a list of currently connected devices."
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/thesims1004/audio_device_detection
 repository: https://github.com/thesims1004/audio_device_detection
 issue_tracker: https://github.com/thesims1004/audio_device_detection/issues
