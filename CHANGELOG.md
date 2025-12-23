@@ -1,3 +1,8 @@
+## [1.0.1]
+
+* iOS bug fixed.
+
+
 ## [1.0.0] - 2025-12-17
 
 * Initial release of the audio device detection plugin.
