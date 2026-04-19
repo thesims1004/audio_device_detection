@@ -1,3 +1,7 @@
+## [1.0.2]
+
+* Fix LICENSE copyright attribution.
+
 ## [1.0.1]
 
 * iOS bug fixed.
