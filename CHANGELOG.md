@@ -1,3 +1,7 @@
+## [1.0.4]
+
+* Support Android Gradle Plugin 9.0. Updated build scripts to ensure compatibility with AGP 9.0.
+
 ## [1.0.3]
 
 * Add Swift Package Manager support for iOS. The plugin can now be built with both CocoaPods and SPM.
